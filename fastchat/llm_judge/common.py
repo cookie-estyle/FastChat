@@ -137,7 +137,7 @@ def load_judge_prompts(prompt_file: str):
     return prompts
 
 
-def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
+def run_judge_single(question, answer, judge, ref_answer, multi_turn=False, iter_count=3):
     kwargs = {}
     model = judge.model_name
     if ref_answer is not None:
@@ -169,7 +169,8 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     conv.append_message(conv.roles[1], None)
 
     if judge.prompt_template["output_format"] in ["[[rating]]", "[[評価]]", "[[평가]]"]:
-        while rating not in range(1,11):
+        while rating not in range(1,11) and iter_count > 0:
+            iter_count -= 1
             if model in OPENAI_MODEL_LIST:
                 judgment = chat_completion_azure_fallback(model, conv, temperature=0, max_tokens=2048)
             elif model in ANTHROPIC_MODEL_LIST:
