@@ -168,24 +168,23 @@ def run_judge_single(question, answer, judge, ref_answer, multi_turn=False):
     conv.append_message(conv.roles[0], user_prompt)
     conv.append_message(conv.roles[1], None)
 
-    if model in OPENAI_MODEL_LIST:
-        judgment = chat_completion_azure_fallback(model, conv, temperature=0, max_tokens=2048)
-    elif model in ANTHROPIC_MODEL_LIST:
-        judgment = chat_completion_anthropic(
-            model, conv, temperature=0, max_tokens=1024
-        )
-    else:
-        raise ValueError(f"Invalid judge model name: {model}")
-
     if judge.prompt_template["output_format"] in ["[[rating]]", "[[評価]]", "[[평가]]"]:
-        match = re.search(one_score_pattern, judgment)
-        if not match:
-            match = re.search(one_score_pattern_backup, judgment)
+        while rating not in range(1,11):
+            if model in OPENAI_MODEL_LIST:
+                judgment = chat_completion_azure_fallback(model, conv, temperature=0, max_tokens=2048)
+            elif model in ANTHROPIC_MODEL_LIST:
+                judgment = chat_completion_anthropic(model, conv, temperature=0, max_tokens=1024)
+            else:
+                raise ValueError(f"Invalid judge model name: {model}")
 
-        if match:
-            rating = ast.literal_eval(match.groups()[0])
-        else:
-            rating = -1
+            match = re.search(one_score_pattern, judgment)
+            if not match:
+                match = re.search(one_score_pattern_backup, judgment)
+
+            if match:
+                rating = ast.literal_eval(match.groups()[0])
+            else:
+                rating = -1
     else:
         raise ValueError(
             f"invalid output format: {judge.prompt_template['output_format']}"
